@@ -1,0 +1,13 @@
+{
+  "name": "flashcards",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:lPadier/flashcards.git",
+  "author": "Loïc Padier <loic.padier@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "prettier": "^1.19.1"
+  }
+}
