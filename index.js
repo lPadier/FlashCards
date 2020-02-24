@@ -33,9 +33,47 @@ function appReducer({ questions, maxKey = 0 }, action) {
         maxKey,
       };
     }
+    case "IMPORT": {
+      return {
+        questions: action.payload.map((e, i) => ({ ...e, key: i })),
+        maxKey: action.payload.length,
+      };
+    }
     default: {
       return { questions, maxKey };
     }
+  }
+}
+
+function exportData(questions) {
+  const a = document.createElement("a");
+  a.setAttribute("download", "flashcards-data.json");
+  const strData = JSON.stringify({
+    questions: questions.map(({ q, a }) => ({ q, a })),
+  });
+  a.href = `data:text/plain;charset=utf-8,${strData}`;
+  a.click();
+}
+
+async function importData(event, dispatch) {
+  const input = event.target;
+  const { files, form } = input;
+  if (!files.length) {
+    return;
+  }
+
+  try {
+    const textData = await files[0].text();
+    const data = JSON.parse(textData);
+    const payload = data.questions.map(({ q, a }) => ({ q, a }));
+
+    dispatch({ type: "IMPORT", payload });
+  } catch (e) {
+    console.groupCollapsed("Error while importing file");
+    console.error(e);
+    console.groupEnd();
+  } finally {
+    form.reset();
   }
 }
 
@@ -47,6 +85,12 @@ function App() {
   );
   return html`
     <div>
+      <button type="button" onclick=${() => exportData(questions)}>
+        Export
+      </button>
+      <form>
+        <input type="file" oninput=${event => importData(event, dispatch)} />
+      </form>
       <${ManageQuestions}
         add=${q => dispatch({ type: "ADD", payload: q })}
         remove=${key => dispatch({ type: "REMOVE", payload: key })}
