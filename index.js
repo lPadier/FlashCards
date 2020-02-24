@@ -137,6 +137,7 @@ function Series({ questions: storedQ }) {
             question=${questions[0].q}
             answer=${questions[0].a}
             key=${questions[0].q}
+            onClick=${() => dispatch({ type: "NEXT" })}
           />
           <button type="button" onClick=${() => dispatch({ type: "NEXT" })}>
             Next
@@ -214,7 +215,7 @@ function FlashCard({ question, answer, onClick }) {
         cursor: "pointer",
         textAlign: "center",
       }}
-      onClick=${toggle}
+      onClick=${isToggled ? onClick : toggle}
     >
       <h6 style=${{ margin: 0 }}>${!isToggled ? "Question" : "Reponse"}<//>
       <div class="pre-wrap">
