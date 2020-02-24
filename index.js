@@ -89,7 +89,7 @@ function App() {
         Export
       </button>
       <form>
-        <input type="file" oninput=${event => importData(event, dispatch)} />
+        <input type="file" onChange=${event => importData(event, dispatch)} />
       </form>
       <${ManageQuestions}
         add=${q => dispatch({ type: "ADD", payload: q })}
