@@ -24,13 +24,13 @@ function appReducer({ questions, maxKey = 0 }, action) {
     case "ADD": {
       return {
         questions: [...questions, { ...action.payload, key: maxKey }],
-        maxKey: maxKey + 1
+        maxKey: maxKey + 1,
       };
     }
     case "REMOVE": {
       return {
         questions: questions.filter(e => e.key != action.payload),
-        maxKey
+        maxKey,
       };
     }
     default: {
@@ -43,7 +43,7 @@ function App() {
   const [{ questions }, dispatch] = usePersistentReducer(
     appReducer,
     "appState",
-    { questions: [] }
+    { questions: [] },
   );
   return html`
     <div>
@@ -62,14 +62,14 @@ function seriesReducer({ questions, started }, action) {
     case "START": {
       return {
         questions: shuffle(action.payload.slice()),
-        started: true
+        started: true,
       };
     }
     case "NEXT": {
       const [, ...rest] = questions;
       return {
         questions: rest,
-        started
+        started,
       };
     }
   }
@@ -78,7 +78,7 @@ function seriesReducer({ questions, started }, action) {
 function Series({ questions: storedQ }) {
   const [{ questions }, dispatch] = useReducer(seriesReducer, {
     questions: [],
-    started: false
+    started: false,
   });
 
   const start = () => dispatch({ type: "START", payload: storedQ });
@@ -127,7 +127,7 @@ function ManageQuestions({ add, remove, questions }) {
                 </ul>
                 <button onclick=${() => remove(q.key)}>Delete</button>
               </li>
-            `
+            `,
         )}
       </ul>
     </details>
@@ -168,7 +168,7 @@ function FlashCard({ question, answer }) {
         borderRadius: 3,
         padding: "5px 10px",
         cursor: "pointer",
-        textAlign: "center"
+        textAlign: "center",
       }}
       onClick=${toggle}
     >
@@ -182,5 +182,5 @@ render(
   html`
     <${App} />
   `,
-  document.getElementById("root")
+  document.getElementById("root"),
 );
