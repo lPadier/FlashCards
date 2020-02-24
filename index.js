@@ -165,7 +165,7 @@ function ManageQuestions({ add, remove, questions }) {
           q =>
             html`
               <li key=${q.key}>
-                <ul>
+                <ul class="pre-wrap">
                   <li>${q.q}</li>
                   <li>${q.a}</li>
                 </ul>
@@ -190,17 +190,17 @@ function AddQuestion({ add }) {
   return html`
     <form onsubmit=${onSumbit} autocomplete="off">
       <div>
-        <label>Question: <input name="q"/></label>
+        <label>Question: <textarea name="q"/></label>
       </div>
       <div>
-        <label>Reponse: <input name="a"/></label>
+        <label>Reponse: <textarea name="a"/></label>
       </div>
       <button>Add question</button>
     </form>
   `;
 }
 
-function FlashCard({ question, answer }) {
+function FlashCard({ question, answer, onClick }) {
   const [isToggled, toggle] = useReducer(s => !s, false);
 
   return html`
@@ -217,7 +217,9 @@ function FlashCard({ question, answer }) {
       onClick=${toggle}
     >
       <h6 style=${{ margin: 0 }}>${!isToggled ? "Question" : "Reponse"}<//>
-      <div>${!isToggled ? question : answer}</div>
+      <div class="pre-wrap">
+        ${!isToggled ? question : answer}
+      </div>
     <//>
   `;
 }
