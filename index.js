@@ -55,6 +55,24 @@ function exportData(questions) {
   a.click();
 }
 
+function getFileText(file) {
+  // Ponyfill of file.text() for Safari
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      resolve(reader.result);
+    };
+
+    reader.onerror = () => {
+      reader.abort();
+      reject();
+    };
+
+    reader.readAsText(file, "utf-8");
+  });
+}
+
 async function importData(event, dispatch) {
   const input = event.target;
   const { files, form } = input;
@@ -63,7 +81,7 @@ async function importData(event, dispatch) {
   }
 
   try {
-    const textData = await files[0].text();
+    const textData = await getFileText(files[0]);
     const data = JSON.parse(textData);
     const payload = data.questions.map(({ q, a }) => ({ q, a }));
 
