@@ -1,5 +1,5 @@
 "use strict";
-const { html, render, useReducer, useEffect } = window.htmPreact;
+const { html, render, useState, useReducer, useEffect } = window.htmPreact;
 
 function getData(key) {
   try {
@@ -49,7 +49,7 @@ function exportData(questions) {
   const a = document.createElement("a");
   a.setAttribute("download", "flashcards-data.json");
   const strData = JSON.stringify({
-    questions: questions.map(({ q, a }) => ({ q, a })),
+    questions: questions.map(({ q, a, tags }) => ({ q, a, tags })),
   });
   a.href = `data:text/plain;charset=utf-8,${strData}`;
   a.click();
@@ -83,7 +83,7 @@ async function importData(event, dispatch) {
   try {
     const textData = await getFileText(files[0]);
     const data = JSON.parse(textData);
-    const payload = data.questions.map(({ q, a }) => ({ q, a }));
+    const payload = data.questions.map(({ q, a, tags }) => ({ q, a, tags }));
 
     dispatch({ type: "IMPORT", payload });
   } catch (e) {
@@ -103,15 +103,10 @@ function App() {
   );
   return html`
     <div>
-      <button type="button" onclick=${() => exportData(questions)}>
-        Export
-      </button>
-      <form>
-        <input type="file" onChange=${event => importData(event, dispatch)} />
-      </form>
       <${ManageQuestions}
         add=${q => dispatch({ type: "ADD", payload: q })}
         remove=${key => dispatch({ type: "REMOVE", payload: key })}
+        dispatch=${dispatch}
         questions=${questions}
       />
       <${Series} questions=${questions} />
@@ -123,7 +118,7 @@ function seriesReducer({ questions, started }, action) {
   switch (action.type) {
     case "START": {
       return {
-        questions: shuffle(action.payload.slice()),
+        questions: shuffle(action.payload),
         started: true,
       };
     }
@@ -143,12 +138,46 @@ function Series({ questions: storedQ }) {
     started: false,
   });
 
-  const start = () => dispatch({ type: "START", payload: storedQ });
+  const start = () => {
+    const selectedTag = document.querySelector('[name="theme"]').value;
+    let questions = storedQ.slice();
+    if (selectedTag) {
+      questions = questions.filter(q => {
+        return q.tags && q.tags.includes(selectedTag);
+      });
+    }
+
+    dispatch({ type: "START", payload: questions });
+  };
+
+  const tags = storedQ.reduce((acc, q) => {
+    if (q.tags && q.tags.length) {
+      for (const tag of q.tags) {
+        acc.add(tag);
+      }
+    }
+    return acc;
+  }, new Set());
+
+  const sortedTags = Array.from(tags).sort();
 
   return html`
-    <button type="button" onClick=${start}>
-      Reset
-    <//>
+    <form>
+      <label>
+        <select name="theme">
+          <option>No theme</option>
+          ${sortedTags.map(
+            tag =>
+              html`
+                <option value=${tag} key=${tag}>${tag}</option>
+              `,
+          )}
+        </select>
+      </label>
+      <button type="button" onClick=${start}>
+        Start series
+      </button>
+    </form>
     ${questions.length
       ? html`
           <${FlashCard}
@@ -174,22 +203,56 @@ function shuffle(array) {
   return array;
 }
 
-function ManageQuestions({ add, remove, questions }) {
+function Question({ question, remove }) {
   return html`
-    <details
-      ><summary>Manage questions</summary>
+    <li>
+      <ul class="pre-wrap">
+        <li>
+          Question:
+          <div>${question.q}</div>
+        </li>
+        <li>
+          Answer:
+          <div>${question.a}</div>
+        </li>
+        <li>
+          Tags:
+          <ul>
+            ${question.tags &&
+              question.tags.map(
+                tag =>
+                  html`
+                    <li>${tag}</li>
+                  `,
+              )}
+          </ul>
+        </li>
+      </ul>
+      <button onclick=${() => remove(question.key)}>Delete</button>
+    </li>
+  `;
+}
+
+function ManageQuestions({ add, remove, questions, dispatch }) {
+  return html`
+    <details>
+      <summary>Manage questions</summary>
+      <button type="button" onclick=${() => exportData(questions)}>
+        Export
+      </button>
+      <form>
+        <input type="file" onChange=${event => importData(event, dispatch)} />
+      </form>
       <${AddQuestion} add=${add} />
       <ul>
         ${questions.map(
-          q =>
+          question =>
             html`
-              <li key=${q.key}>
-                <ul class="pre-wrap">
-                  <li>${q.q}</li>
-                  <li>${q.a}</li>
-                </ul>
-                <button onclick=${() => remove(q.key)}>Delete</button>
-              </li>
+              <${Question}
+                question=${question}
+                key=${question.key}
+                remove=${remove}
+              />
             `,
         )}
       </ul>
@@ -198,12 +261,44 @@ function ManageQuestions({ add, remove, questions }) {
 }
 
 function AddQuestion({ add }) {
+  const [tags, setTags] = useState([]);
+
   function onSumbit(e) {
     e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
-    add({ q: formData.get("q"), a: formData.get("a") });
+    const q = formData.get("q");
+    const a = formData.get("a");
+    if (!a || !q) {
+      return;
+    }
+    add({ q, a, tags });
     form.reset();
+    setTags([]);
+  }
+
+  function addTag(event) {
+    const { form } = event.target;
+    const formData = new FormData(form);
+    const tag = formData.get("tag");
+    if (tag && !tags.includes(tag)) {
+      setTags(tags => [...tags, tag]);
+      window.addTagForm = form;
+      // Clear input
+      form.querySelector('[name="tag"]').value = "";
+    }
+  }
+
+  function onTagKeydown(event) {
+    const { form } = event.target;
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      form.querySelector('button[name="addTag"]').click();
+    }
+  }
+
+  function deleteTag(i) {
+    setTags(tags => tags.filter((_, j) => i !== j));
   }
 
   return html`
@@ -214,6 +309,24 @@ function AddQuestion({ add }) {
       <div>
         <label>Reponse: <textarea name="a"/></label>
       </div>
+      <ul>
+        ${tags.map(
+          (tag, i) =>
+            html`
+              <li key=${i}>
+                ${tag}
+                <button type="button" onclick=${() => deleteTag(i)}>
+                  Delete Tag
+                </button>
+              </li>
+            `,
+        )}
+      </ul>
+      <div>
+        <label>Add tag: <input name="tag" onkeydown=${onTagKeydown}/></label>
+        <button type="button" name="addTag" onclick=${addTag}>Add Tag</button>
+      </div>
+
       <button>Add question</button>
     </form>
   `;
